@@ -2,6 +2,11 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g. 1.0.0)'
+        required: true
+        type: string
 
 jobs:
   build:
@@ -21,14 +26,14 @@ jobs:
       - name: Package artifact
         run: |
           cd rust/target/release
-          PKG_NAME="webdav_backup-${{ github.ref_name }}-linux-amd64"
+          PKG_NAME="webdav_backup-${{ github.event.inputs.version }}-linux-amd64"
           zip -j "../../../${PKG_NAME}.zip" "webdav_backup"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: webdav_backup-${{ github.ref_name }}-linux-amd64
-          path: rust/webdav_backup-${{ github.ref_name }}-linux-amd64.zip
+          name: webdav_backup-${{ github.event.inputs.version }}-linux-amd64
+          path: rust/webdav_backup-${{ github.event.inputs.version }}-linux-amd64.zip
 
   release:
     name: Create Release
@@ -36,6 +41,13 @@ jobs:
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Create tag
+        run: |
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
@@ -43,5 +55,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.event.inputs.version }}
           files: artifacts/**/*.zip
           generate_release_notes: true
