@@ -47,7 +47,8 @@ pub struct BackupProject {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct FileConfig {
-    pub local_path: String,
+    #[serde(deserialize_with = "one_or_many_strings")]
+    pub local_path: Vec<String>,
     pub exclude: Option<String>,
 }
 
@@ -58,8 +59,8 @@ pub struct MySqlConfig {
     pub port: u16,
     pub username: String,
     pub password: String,
-    pub database: String,
-    pub tables: Option<String>,
+    #[serde(deserialize_with = "one_or_many_strings")]
+    pub database: Vec<String>,
     pub ssl_mode: Option<String>,
 }
 
@@ -70,9 +71,52 @@ pub struct PgSqlConfig {
     pub port: u16,
     pub username: String,
     pub password: String,
-    pub database: String,
-    pub tables: Option<String>,
+    #[serde(deserialize_with = "one_or_many_strings")]
+    pub database: Vec<String>,
     pub ssl_mode: Option<String>,
+}
+
+fn one_or_many_strings<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    use serde::de;
+
+    struct OneOrMany;
+
+    impl<'de> de::Visitor<'de> for OneOrMany {
+        type Value = Vec<String>;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str("a string or an array of strings")
+        }
+
+        fn visit_str<E: de::Error>(self, v: &str) -> Result<Vec<String>, E> {
+            Ok(vec![v.to_string()])
+        }
+
+        fn visit_seq<S: de::SeqAccess<'de>>(self, seq: S) -> Result<Vec<String>, S::Error> {
+            de::Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))
+        }
+    }
+
+    deserializer.deserialize_any(OneOrMany)
+}
+
+/// Parse a `"db.table"` entry into (database_name, optional_table_pattern).
+/// `"db.*"` or `"db"` means all tables in that database.
+pub fn parse_db_table(entry: &str) -> (&str, Option<&str>) {
+    if let Some(dot_pos) = entry.find('.') {
+        let db = &entry[..dot_pos];
+        let table = &entry[dot_pos + 1..];
+        if table == "*" {
+            (db, None)
+        } else {
+            (db, Some(table))
+        }
+    } else {
+        (entry, None)
+    }
 }
 
 fn default_mysql_port() -> u16 {

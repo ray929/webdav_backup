@@ -28,32 +28,30 @@
       "retain_count": 3,
       "sub_dir": "documents",
       "file": {
-        "local_path": "D:\\Documents",
+        "local_path": ["D:\\Documents", "D:\\Photos"],
         "exclude": "node_modules target *.tmp Thumbs.db"
       }
     },
     {
       "source": "cloud",
-      "sub_dir": "blog_db",
+      "sub_dir": "dbs",
       "mysql": {
         "host": "localhost",
         "port": 3306,
         "username": "root",
         "password": "db_password",
-        "database": "blog",
-        "tables": "*"
+        "database": ["blog.posts", "blog.comments", "analytics.*"]
       }
     },
     {
       "source": "nas",
-      "sub_dir": "analytics_db",
+      "sub_dir": "dbs",
       "pgsql": {
         "host": "localhost",
         "port": 5432,
         "username": "postgres",
         "password": "db_password",
-        "database": "analytics",
-        "tables": "*"
+        "database": ["sales.*", "inventory.products"]
       }
     }
   ]

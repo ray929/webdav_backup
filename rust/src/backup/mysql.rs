@@ -1,4 +1,4 @@
-use crate::config::MySqlConfig;
+use crate::config::{parse_db_table, MySqlConfig};
 use anyhow::Result;
 use std::fs::File;
 use std::io::Write;
@@ -9,47 +9,49 @@ use zip::write::ZipWriter;
 use zip::{AesMode, CompressionMethod};
 
 pub async fn backup(config: &MySqlConfig, dump_path: &str, zip_path: &Path, password: Option<&str>) -> Result<()> {
-    let mut cmd = Command::new(dump_path);
-    cmd.arg(format!("--host={}", config.host))
-        .arg(format!("--port={}", config.port))
-        .arg(format!("--user={}", config.username))
-        .arg(format!("--password={}", config.password))
-        .arg("--single-transaction")
-        .arg("--routines")
-        .arg("--triggers");
+    let mut all_sql = Vec::new();
 
-    if let Some(ref ssl_mode) = config.ssl_mode {
-        cmd.arg(format!("--ssl-mode={}", ssl_mode));
-    }
+    for entry in &config.database {
+        let (db_name, table) = parse_db_table(entry);
 
-    cmd.arg(&config.database);
+        let mut cmd = Command::new(dump_path);
+        cmd.arg(format!("--host={}", config.host))
+            .arg(format!("--port={}", config.port))
+            .arg(format!("--user={}", config.username))
+            .arg(format!("--password={}", config.password))
+            .arg("--single-transaction")
+            .arg("--routines")
+            .arg("--triggers");
 
-    if let Some(ref tables) = config.tables {
-        if tables != "*" {
-            for table in tables.split_whitespace() {
-                cmd.arg(table);
-            }
+        if let Some(ref ssl_mode) = config.ssl_mode {
+            cmd.arg(format!("--ssl-mode={}", ssl_mode));
         }
+
+        cmd.arg(db_name);
+
+        if let Some(table) = table {
+            cmd.arg(table);
+        }
+
+        let output = cmd
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .output()
+            .await?;
+
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            anyhow::bail!("mysqldump failed for '{}': {}", entry, stderr);
+        }
+
+        all_sql.extend_from_slice(&output.stdout);
     }
 
-    let output = cmd
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .output()
-        .await?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        anyhow::bail!("mysqldump failed: {}", stderr);
-    }
-
-    let sql = output.stdout;
     let zip_file = File::create(zip_path)?;
     let mut zip = ZipWriter::new(zip_file);
 
     let filename = format!(
-        "{}_{}.sql",
-        config.database,
+        "backup_{}.sql",
         chrono::Local::now().format("%Y%m%d_%H%M%S")
     );
     if let Some(password) = password {
@@ -62,7 +64,7 @@ pub async fn backup(config: &MySqlConfig, dump_path: &str, zip_path: &Path, pass
             .compression_method(CompressionMethod::Deflated);
         zip.start_file(filename, options)?;
     }
-    zip.write_all(&sql)?;
+    zip.write_all(&all_sql)?;
     zip.finish()?;
 
     Ok(())
