@@ -18,6 +18,7 @@ rust/Cargo.lock
 Thumbs.db
 
 # Secrets
+config.json
 .env
 *.pem
 *.key

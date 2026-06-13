@@ -29,11 +29,10 @@ A CLI tool for backing up local files and MySQL / PostgreSQL databases via WebDA
 Copy the example configuration file and edit it:
 
 ```bash
-cd rust
 cp config.example.json config.json
 ```
 
-If no configuration file is specified explicitly, the program defaults to `config.json` in the same directory as the executable.
+If no configuration file is specified explicitly, the program defaults to `config.json` in the current working directory. A sample configuration is provided at `config.example.json` in the project root.
 
 ### Configuration Items
 
