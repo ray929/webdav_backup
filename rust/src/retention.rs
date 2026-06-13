@@ -9,7 +9,6 @@ impl RetentionPolicy {
     pub async fn apply(
         client: &WebDavClient,
         remote_dir: &str,
-        prefix: &str,
         retain_count: usize,
     ) -> Result<()> {
         if retain_count == 0 {
@@ -23,7 +22,7 @@ impl RetentionPolicy {
 
         for file in files {
             let name = file.trim_start_matches('/');
-            if !name.starts_with(prefix) || !name.ends_with(".zip") {
+            if !name.ends_with(".zip") {
                 continue;
             }
             if let Some(dt) = parse_timestamp(name) {

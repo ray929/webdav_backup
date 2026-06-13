@@ -119,6 +119,58 @@ impl WebDavClient {
         Ok(resp)
     }
 
+    pub async fn mkdir(&self, path: &str) -> Result<()> {
+        let method = Method::from_bytes(b"MKCOL")?;
+
+        // Recursively create each path segment
+        let segments: Vec<&str> = path.trim_start_matches('/').trim_end_matches('/').split('/').filter(|s| !s.is_empty()).collect();
+        let mut current = String::new();
+        for segment in segments {
+            if !current.is_empty() {
+                current.push('/');
+            }
+            current.push_str(segment);
+
+            let mkcol_path = format!("{}/", current);
+            debug!("MKCOL {}", mkcol_path);
+            let resp = self.request(method.clone(), &mkcol_path, None, None).await?;
+            let status = resp.status();
+            if status.is_success() {
+                debug!("MKCOL {} succeeded", mkcol_path);
+                continue;
+            }
+            if status == StatusCode::METHOD_NOT_ALLOWED || status == StatusCode::CONFLICT {
+                debug!("MKCOL {} failed ({}), checking if directory exists", mkcol_path, status);
+                if self.check_collection_exists(&current).await? {
+                    debug!("directory '{}' already exists", current);
+                    continue;
+                }
+                anyhow::bail!(
+                    "cannot create directory '{}' via WebDAV (MKCOL returned {}). \
+                     Please create the folder manually through the Koofr web interface.",
+                    current, status
+                );
+            }
+            let text = resp.text().await.unwrap_or_default();
+            anyhow::bail!("MKCOL failed for '{}': {} {}", mkcol_path, status, text);
+        }
+
+        Ok(())
+    }
+
+    async fn check_collection_exists(&self, path: &str) -> Result<bool> {
+        let method = Method::from_bytes(b"PROPFIND")?;
+        let body = r#"<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:"><prop><resourcetype/></prop></propfind>"#
+            .as_bytes()
+            .to_vec();
+
+        let check_path = format!("{}/", path.trim_end_matches('/'));
+        let resp = self.request(method, &check_path, Some(body), Some(vec![("Depth", "0")])).await?;
+        let status = resp.status();
+        Ok(status.is_success() || status == StatusCode::MULTI_STATUS)
+    }
+
     pub async fn upload(&self, local_path: &str, remote_path: &str) -> Result<()> {
         let bytes = tokio::fs::read(local_path).await?;
         debug!("uploading {} bytes to {}", bytes.len(), remote_path);
