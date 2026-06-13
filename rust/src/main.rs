@@ -12,8 +12,10 @@ use tracing::{error, info};
 #[derive(Parser, Debug)]
 #[command(name = "webdav_backup", about = "Backup files and databases to WebDAV")]
 struct Cli {
-    #[arg(short, long, default_value = "config.toml")]
+    #[arg(short, long, default_value = "config.json")]
     config: String,
+    #[arg(long)]
+    background: bool,
 }
 
 #[tokio::main]
@@ -22,7 +24,7 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     let config = Config::from_file(&cli.config)?;
-    logger::init(config.global.log_level.as_deref());
+    logger::init(config.global.log_level.as_deref(), cli.background)?;
 
     info!("webdav_backup started");
 

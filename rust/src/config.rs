@@ -83,7 +83,7 @@ fn default_pgsql_port() -> u16 {
 impl Config {
     pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = std::fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
+        let config: Config = serde_json::from_str(&content)?;
         config.validate()?;
         Ok(config)
     }

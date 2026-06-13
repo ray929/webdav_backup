@@ -30,30 +30,30 @@ Copy the example configuration file and edit it:
 
 ```bash
 cd rust
-cp config.example.toml config.toml
+cp config.example.json config.json
 ```
 
-If no configuration file is specified explicitly, the program defaults to `config.toml` in the same directory as the executable.
+If no configuration file is specified explicitly, the program defaults to `config.json` in the same directory as the executable.
 
 ### Configuration Items
 
-- `[global]` — Global default settings
+- `global` — Global default settings
   - `zip_password` — Global ZIP password; leave unset for no encryption
   - `retain_count` — Global retention count; `0` means never delete old backups
   - `log_level` — Log level: `trace`, `debug`, `info`, `warn`, `error`
 
-- `[[source]]` — Remote WebDAV sources (multiple sources supported)
+- `source` — Array of remote WebDAV sources (multiple sources supported)
   - `name` — Source name, referenced by projects
   - `url`, `username`, `password` — WebDAV connection credentials
   - `sub_dir` — Default remote subdirectory for this source
   - `zip_password` — Overrides the global ZIP password
   - `retain_count` — Overrides the global retention count
 
-- `[[project]]` — Backup projects (each project must be exactly one of: file / MySQL / PgSQL)
+- `project` — Array of backup projects (each project must be exactly one of: file / MySQL / PgSQL)
   - `name` — Project name
   - `source` — Which remote source to use
   - `sub_dir` / `zip_password` / `retain_count` — Override source-level settings
-  - `[project.file]` / `[project.mysql]` / `[project.pgsql]` — Type-specific settings
+  - `file` / `mysql` / `pgsql` — Type-specific settings
 
 ## Development Commands
 
@@ -65,7 +65,13 @@ cargo run
 Or specify a custom configuration file:
 
 ```bash
-cargo run -- --config /path/to/config.toml
+cargo run -- --config /path/to/config.json
+```
+
+Run in background mode (logs written to `webdav_backup.log`):
+
+```bash
+cargo run -- --background
 ```
 
 ## Build
