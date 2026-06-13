@@ -8,7 +8,7 @@ use crate::webdav::WebDavClient;
 use anyhow::Result;
 use chrono::Local;
 use tempfile::NamedTempFile;
-use tracing::{error, info, instrument};
+use tracing::{info, instrument};
 
 #[instrument(skip(config, project, client))]
 pub async fn run_project(

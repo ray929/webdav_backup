@@ -39,13 +39,13 @@ pub async fn backup(config: &FileConfig, zip_path: &Path, password: Option<&str>
         file.read_to_end(&mut contents)?;
 
         if let Some(password) = password {
-            let options = zip::write::FileOptions::default()
-                .compression_method(CompressionMethod::Deflate)
+            let options = zip::write::FileOptions::<'_, ()>::default()
+                .compression_method(CompressionMethod::Deflated)
                 .with_aes_encryption(AesMode::Aes256, password);
             zip.start_file(relative_str, options)?;
         } else {
-            let options = zip::write::FileOptions::default()
-                .compression_method(CompressionMethod::Deflate);
+            let options = zip::write::FileOptions::<'_, ()>::default()
+                .compression_method(CompressionMethod::Deflated);
             zip.start_file(relative_str, options)?;
         }
         zip.write_all(&contents)?;

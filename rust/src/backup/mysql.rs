@@ -53,13 +53,13 @@ pub async fn backup(config: &MySqlConfig, zip_path: &Path, password: Option<&str
         chrono::Local::now().format("%Y%m%d_%H%M%S")
     );
     if let Some(password) = password {
-        let options = zip::write::FileOptions::default()
-            .compression_method(CompressionMethod::Deflate)
+        let options = zip::write::FileOptions::<'_, ()>::default()
+            .compression_method(CompressionMethod::Deflated)
             .with_aes_encryption(AesMode::Aes256, password);
         zip.start_file(filename, options)?;
     } else {
-        let options = zip::write::FileOptions::default()
-            .compression_method(CompressionMethod::Deflate);
+        let options = zip::write::FileOptions::<'_, ()>::default()
+            .compression_method(CompressionMethod::Deflated);
         zip.start_file(filename, options)?;
     }
     zip.write_all(&sql)?;

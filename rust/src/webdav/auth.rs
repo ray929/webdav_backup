@@ -1,7 +1,7 @@
 use md5::{Digest, Md5};
 use std::sync::atomic::{AtomicU32, Ordering};
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DigestAuth {
     pub username: String,
     pub password: String,
@@ -11,6 +11,21 @@ pub struct DigestAuth {
     pub qop: Option<String>,
     pub algorithm: Option<String>,
     pub nc: AtomicU32,
+}
+
+impl Clone for DigestAuth {
+    fn clone(&self) -> Self {
+        Self {
+            username: self.username.clone(),
+            password: self.password.clone(),
+            realm: self.realm.clone(),
+            nonce: self.nonce.clone(),
+            opaque: self.opaque.clone(),
+            qop: self.qop.clone(),
+            algorithm: self.algorithm.clone(),
+            nc: AtomicU32::new(self.nc.load(Ordering::SeqCst)),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
