@@ -3,6 +3,10 @@ name = "webdav_backup"
 version = "1.0.0"
 edition = "2021"
 
+[[bin]]
+name = "webdav-backup"
+path = "src/main.rs"
+
 [dependencies]
 tokio = { version = "1", features = ["full"] }
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "multipart", "stream"] }

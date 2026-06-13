@@ -31,14 +31,14 @@ jobs:
       - name: Package artifact
         run: |
           cd rust/target/x86_64-unknown-linux-musl/release
-          PKG_NAME="webdav_backup-${{ github.event.inputs.version }}-linux-amd64"
-          zip -j "../../../${PKG_NAME}.zip" "webdav_backup"
+          PKG_NAME="webdav-backup-${{ github.event.inputs.version }}-linux-amd64"
+          zip -j "../../../${PKG_NAME}.zip" "webdav-backup"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: webdav_backup-${{ github.event.inputs.version }}-linux-amd64
-          path: rust/webdav_backup-${{ github.event.inputs.version }}-linux-amd64.zip
+          name: webdav-backup-${{ github.event.inputs.version }}-linux-amd64
+          path: rust/webdav-backup-${{ github.event.inputs.version }}-linux-amd64.zip
 
   release:
     name: Create Release

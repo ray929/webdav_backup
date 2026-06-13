@@ -10,7 +10,7 @@ use config::Config;
 use tracing::{error, info};
 
 #[derive(Parser, Debug)]
-#[command(name = "webdav_backup", about = "Backup files and databases to WebDAV")]
+#[command(name = "webdav-backup", about = "Backup files and databases to WebDAV")]
 struct Cli {
     #[arg(short, long, default_value = "config.json")]
     config: String,
