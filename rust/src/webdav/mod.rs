@@ -119,37 +119,13 @@ impl WebDavClient {
         Ok(resp)
     }
 
-    pub async fn mkdir(&self, path: &str) -> Result<()> {
-        let method = Method::from_bytes(b"MKCOL")?;
-
-        // Recursively create each path segment
-        let segments: Vec<&str> = path.trim_start_matches('/').trim_end_matches('/').split('/').filter(|s| !s.is_empty()).collect();
-        let mut current = String::new();
-        for segment in segments {
-            if !current.is_empty() {
-                current.push('/');
-            }
-            current.push_str(segment);
-
-            let resp = self.request(method.clone(), &current, None, None).await?;
-            let status = resp.status();
-            if status.is_success()
-                || status == StatusCode::METHOD_NOT_ALLOWED
-                || status == StatusCode::CONFLICT
-            {
-                // success, already exists, or intermediate collection already exists
-                continue;
-            }
-            let text = resp.text().await.unwrap_or_default();
-            anyhow::bail!("MKCOL failed for '{}': {} {}", current, status, text);
-        }
-
-        Ok(())
-    }
-
     pub async fn upload(&self, local_path: &str, remote_path: &str) -> Result<()> {
         let bytes = tokio::fs::read(local_path).await?;
-        let resp = self.request(Method::PUT, remote_path, Some(bytes), None).await?;
+        debug!("uploading {} bytes to {}", bytes.len(), remote_path);
+        let resp = self
+            .request(Method::PUT, remote_path, Some(bytes), None)
+            .await
+            .map_err(|e| anyhow!("upload request failed for '{}': {}", remote_path, e))?;
         let status = resp.status();
         if !status.is_success() {
             let text = resp.text().await.unwrap_or_default();
