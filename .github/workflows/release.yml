@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+            ext: .exe
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+          - target: i686-unknown-linux-gnu
+            os: ubuntu-latest
+            ext: ''
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Install 32-bit GCC (Linux i686)
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install -y gcc-i686-linux-gnu
+
+      - name: Configure linker for i686
+        if: matrix.target == 'i686-unknown-linux-gnu'
+        run: |
+          mkdir -p .cargo
+          echo '[target.i686-unknown-linux-gnu]' >> .cargo/config.toml
+          echo 'linker = "i686-linux-gnu-gcc"' >> .cargo/config.toml
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+        working-directory: rust
+
+      - name: Package artifact
+        shell: bash
+        run: |
+          cd rust/target/${{ matrix.target }}/release
+          PKG_NAME="webdav_backup-${{ github.ref_name }}-${{ matrix.target }}${{ matrix.ext }}"
+          if [ "${{ runner.os }}" = "Windows" ]; then
+            7z a "../../../${PKG_NAME}.zip" "webdav_backup${{ matrix.ext }}"
+          else
+            zip -j "../../../${PKG_NAME}.zip" "webdav_backup${{ matrix.ext }}"
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: webdav_backup-${{ github.ref_name }}-${{ matrix.target }}
+          path: rust/webdav_backup-${{ github.ref_name }}-${{ matrix.target }}.zip
+
+  release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*.zip
+          generate_release_notes: true
