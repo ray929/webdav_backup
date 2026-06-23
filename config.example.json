@@ -4,7 +4,8 @@
     "retain_count": 5,
     "log_level": "info",
     "mysqldump_path": "mysqldump",
-    "pg_dump_path": "pg_dump"
+    "pg_dump_path": "pg_dump",
+    "sqlite3_path": "sqlite3"
   },
   "source": [
     {
@@ -52,6 +53,13 @@
         "username": "postgres",
         "password": "db_password",
         "database": ["sales.*", "inventory.products"]
+      }
+    },
+    {
+      "source": "cloud",
+      "sub_dir": "sqlite",
+      "sqlite": {
+        "database": ["D:\\data\\app.db", "D:\\data\\cache.db"]
       }
     }
   ]

@@ -1,6 +1,7 @@
 pub mod file;
 pub mod mysql;
 pub mod pgsql;
+pub mod sqlite;
 
 use crate::config::{BackupProject, Config};
 use crate::retention::RetentionPolicy;
@@ -44,6 +45,9 @@ pub async fn run_project(
     } else if let Some(ref pgsql_config) = project.pgsql {
         let dump_path = config.resolve_pg_dump_path();
         pgsql::backup(pgsql_config, dump_path, &temp_path, password.as_deref()).await?;
+    } else if let Some(ref sqlite_config) = project.sqlite {
+        let sqlite3_path = config.resolve_sqlite3_path();
+        sqlite::backup(sqlite_config, sqlite3_path, &temp_path, password.as_deref()).await?;
     }
 
     info!(zip = %zip_name, "uploading to webdav");

@@ -3,6 +3,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::sync::Mutex;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::fmt::time::LocalTime;
 
 #[derive(Debug)]
 struct FileWriter(Mutex<std::fs::File>);
@@ -48,6 +49,7 @@ pub fn init(log_level: Option<&str>, background: bool) -> Result<()> {
         .with_level(true)
         .with_thread_ids(false)
         .with_thread_names(false)
+        .with_timer(LocalTime::rfc_3339())
         .compact();
 
     if background {

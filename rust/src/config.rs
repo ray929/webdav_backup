@@ -18,6 +18,7 @@ pub struct GlobalConfig {
     pub log_level: Option<String>,
     pub mysqldump_path: Option<String>,
     pub pg_dump_path: Option<String>,
+    pub sqlite3_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -43,6 +44,7 @@ pub struct BackupProject {
     pub file: Option<FileConfig>,
     pub mysql: Option<MySqlConfig>,
     pub pgsql: Option<PgSqlConfig>,
+    pub sqlite: Option<SqliteConfig>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -74,6 +76,12 @@ pub struct PgSqlConfig {
     #[serde(deserialize_with = "one_or_many_strings")]
     pub database: Vec<String>,
     pub ssl_mode: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct SqliteConfig {
+    #[serde(deserialize_with = "one_or_many_strings")]
+    pub database: Vec<String>,
 }
 
 fn one_or_many_strings<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
@@ -168,13 +176,14 @@ impl Config {
                 project.file.is_some(),
                 project.mysql.is_some(),
                 project.pgsql.is_some(),
+                project.sqlite.is_some(),
             ]
             .iter()
             .filter(|&&x| x)
             .count();
             if config_count != 1 {
                 anyhow::bail!(
-                    "backup[{}] must have exactly one of: file, mysql, pgsql",
+                    "backup[{}] must have exactly one of: file, mysql, pgsql, sqlite",
                     idx
                 );
             }
@@ -230,5 +239,9 @@ impl Config {
 
     pub fn resolve_pg_dump_path(&self) -> &str {
         self.global.pg_dump_path.as_deref().unwrap_or("pg_dump")
+    }
+
+    pub fn resolve_sqlite3_path(&self) -> &str {
+        self.global.sqlite3_path.as_deref().unwrap_or("sqlite3")
     }
 }

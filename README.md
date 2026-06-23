@@ -12,6 +12,7 @@ A CLI tool for backing up local files and MySQL / PostgreSQL databases via WebDA
 - Full file backup with `.gitignore`-style exclude rules
 - MySQL database backup via `mysqldump`
 - PostgreSQL database backup via `pg_dump`
+- SQLite database hot backup via `sqlite3` `.backup` command
 - Multiple WebDAV remote sources, each backup can choose which source to use
 - ZIP compression with optional AES-256 password protection
 - Three-level configuration inheritance: Global → Source → Backup
@@ -23,6 +24,7 @@ A CLI tool for backing up local files and MySQL / PostgreSQL databases via WebDA
 - Rust 1.75+
 - `mysqldump` (required for MySQL backups)
 - `pg_dump` (required for PostgreSQL backups)
+- `sqlite3` CLI (required for SQLite backups)
 
 ## Configuration
 
@@ -42,6 +44,7 @@ If no configuration file is specified explicitly, the program defaults to `confi
   - `log_level` — Log level: `trace`, `debug`, `info`, `warn`, `error`
   - `mysqldump_path` — Custom path to `mysqldump`; uses system `mysqldump` if omitted
   - `pg_dump_path` — Custom path to `pg_dump`; uses system `pg_dump` if omitted
+  - `sqlite3_path` — Custom path to `sqlite3` CLI; uses system `sqlite3` if omitted
 
 - `source` — Array of remote WebDAV sources (multiple sources supported)
   - `name` — Source name, referenced by backups
@@ -51,11 +54,35 @@ If no configuration file is specified explicitly, the program defaults to `confi
   - `retain_count` — Overrides the global retention count
   - `proxy` — HTTP/HTTPS proxy URL for this source
 
-- `backup` — Array of backup items (each item must be exactly one of: file / MySQL / PgSQL)
+- `backup` — Array of backup items (each item must be exactly one of: file / MySQL / PgSQL / SQLite)
   - `source` — Which remote source to use
   - `sub_dir` — Remote subdirectory for this backup; if omitted, defaults to `"backup"`
   - `zip_password` / `retain_count` — Override source-level settings
-  - `file` / `mysql` / `pgsql` — Type-specific settings
+  - `file` / `mysql` / `pgsql` / `sqlite` — Type-specific settings
+
+### SQLite Backup
+
+SQLite backups use the `sqlite3` CLI's `.backup` command to perform a **hot backup** — a consistent snapshot of the database while it is still in use. This is equivalent to running:
+
+```bash
+sqlite3 your_database.db ".backup 'backup_copy.db'"
+```
+
+Configuration example:
+
+```json
+{
+  "source": "nas",
+  "sub_dir": "sqlite",
+  "sqlite": {
+    "database": ["D:\\data\\app.db", "/var/data/cache.db"]
+  }
+}
+```
+
+- `database` — Path(s) to SQLite database file(s) on the local filesystem. Supports a single string or an array of strings. Each `.db` file is backed up individually into the ZIP.
+
+> **Note**: The `sqlite3` CLI tool must be installed separately. On Windows, download from [sqlite.org/download.html](https://sqlite.org/download.html) and ensure `sqlite3.exe` is in your PATH, or set `sqlite3_path` in the global config.
 
 ## Development Commands
 
