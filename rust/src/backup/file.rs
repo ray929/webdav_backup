@@ -39,7 +39,12 @@ pub async fn backup(config: &FileConfig, zip_path: &Path, password: Option<&str>
             let prefix = local_path
                 .to_string_lossy()
                 .replace(['/', '\\', ':'], "_");
-            let zip_name = format!("{}/{}", prefix, rel_path);
+            // 当 local_path 本身是单个文件时, rel_path 为空, 不要加 "/" 避免被 ZIP 当作目录
+            let zip_name = if rel_path.is_empty() {
+                prefix.to_string()
+            } else {
+                format!("{}/{}", prefix, rel_path)
+            };
 
             let mut file = File::open(path)?;
             let mut contents = Vec::new();
